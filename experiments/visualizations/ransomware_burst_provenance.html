@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+    #cy {
+      width: 100vw;
+      height: 680px;
+      display: block;
+      background: radial-gradient(#161b22 15%, transparent 16%) 0 0,
+                  radial-gradient(#161b22 15%, transparent 16%) 8px 8px;
+      background-size: 16px 16px;
+      background-color: #0d1117;
+    }
+    #toolbar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      background: #21262d;
+      color: #58a6ff;
+      border: 1px solid #30363d;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .btn:hover {
+      background: #30363d;
+      color: #79c0ff;
+    }
+    #details-panel {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 380px;
+      max-height: 280px;
+      overflow-y: auto;
+      background: rgba(22, 27, 34, 0.95);
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      font-size: 12px;
+      display: none;
+      z-index: 100;
+    }
+    #details-panel h4 {
+      margin: 0 0 8px 0;
+      color: #58a6ff;
+      font-size: 14px;
+    }
+    .prop-row {
+      display: flex;
+      margin-bottom: 4px;
+    }
+    .prop-label {
+      font-weight: 600;
+      width: 110px;
+      color: #8b949e;
+      flex-shrink: 0;
+    }
+    .prop-val {
+      color: #f0f6fc;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button class="btn" onclick="cy.fit(null, 50)">Fit Graph</button>
+    <button class="btn" onclick="centerPoI()">Focus PoI</button>
+    <button class="btn" onclick="runLayout('dagre')">Hierarchical Layout</button>
+    <button class="btn" onclick="runLayout('breadthfirst')">Breadth-First</button>
+  </div>
+
+  <div id="cy"></div>
+
+  <div id="details-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h4 id="panel-title">Forensic Element</h4>
+      <span style="cursor:pointer; color:#8b949e;" onclick="hidePanel()">✕</span>
+    </div>
+    <div id="panel-content"></div>
+  </div>
+
+  <script>
+    var elements = {"nodes": [{"data": {"id": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1000", "label": "ProcessCreate\ncmd.exe", "event_key": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1000", "event_type": "ProcessCreate", "event_id": 1, "host_name": "VICTIM-PC.corp.local", "channel": "Microsoft-Windows-Sysmon/Operational", "record_id": 1000, "timestamp_utc": "2026-10-25 12:00:00.000", "timestamp_epoch": 1792929600.0, "process_guid": "{11111111-2222-3333-4444-555555555555}", "parent_process_guid": "{00000000-0000-0000-0000-000000000000}", "target_object": "C:\\Windows\\System32\\cmd.exe", "hashes": null, "color": "#1E88E5", "is_poi": false}, "classes": "processcreate"}, {"data": {"id": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001", "label": "ProcessCreate\nwannacrypt.exe", "event_key": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001", "event_type": "ProcessCreate", "event_id": 1, "host_name": "VICTIM-PC.corp.local", "channel": "Microsoft-Windows-Sysmon/Operational", "record_id": 1001, "timestamp_utc": "2026-10-25 12:00:01.000", "timestamp_epoch": 1792929601.0, "process_guid": "{66666666-7777-8888-9999-000000000000}", "parent_process_guid": "{11111111-2222-3333-4444-555555555555}", "target_object": "C:\\Users\\victim\\AppData\\Local\\Temp\\wannacrypt.exe", "hashes": null, "color": "#FDD835", "is_poi": true}, "classes": "poi"}, {"data": {"id": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1002", "label": "RegistryObject\nInstall", "event_key": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1002", "event_type": "RegistryObject", "event_id": 12, "host_name": "VICTIM-PC.corp.local", "channel": "Microsoft-Windows-Sysmon/Operational", "record_id": 1002, "timestamp_utc": "2026-10-25 12:00:02.000", "timestamp_epoch": 1792929602.0, "process_guid": "{66666666-7777-8888-9999-000000000000}", "parent_process_guid": null, "target_object": "HKCU\\Software\\WannaCryptor\\Install", "hashes": null, "color": "#8E24AA", "is_poi": false}, "classes": "registryobject"}, {"data": {"id": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001:burst:WRITES_FILE:c0c6c7", "label": "MacroBurst_FileCreate\n[601 actions collapsed]", "event_key": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001:burst:WRITES_FILE:c0c6c7", "event_type": "MacroBurst_FileCreate", "event_id": 0, "host_name": "VICTIM-PC.corp.local", "channel": "Microsoft-Windows-Sysmon/Operational", "record_id": 0, "timestamp_utc": "2026-10-25 12:00:02.050", "timestamp_epoch": 1792929602.05, "process_guid": null, "parent_process_guid": null, "target_object": "[601 actions collapsed]", "hashes": null, "color": "#8E24AA", "is_poi": false}, "classes": "macro_cluster"}], "edges": [{"data": {"id": "e_0_VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1000_VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001", "source": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1000", "target": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001", "label": "SPAWNS", "relation_type": "SPAWNS", "is_macro": false, "macro_edge_id": "", "event_count": 1, "start_time_epoch": null, "end_time_epoch": null, "ordered_event_keys": [], "color": "#78909C", "width": 2}, "classes": "standard_edge"}, {"data": {"id": "e_1_VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001_VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1002", "source": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001", "target": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1002", "label": "MODIFIES_REG", "relation_type": "MODIFIES_REG", "is_macro": false, "macro_edge_id": "", "event_count": 1, "start_time_epoch": null, "end_time_epoch": null, "ordered_event_keys": [], "color": "#78909C", "width": 2}, "classes": "standard_edge"}, {"data": {"id": "e_2_VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001_VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001:burst:WRITES_FILE:c0c6c7", "source": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001", "target": "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001:burst:WRITES_FILE:c0c6c7", "label": "WRITES_FILE [x601]", "relation_type": "WRITES_FILE", "is_macro": true, "macro_edge_id": "macro_fanout_76190cc0c6c7", "event_count": 601, "start_time_epoch": 1792929602.05, "end_time_epoch": 1792929632.05, "ordered_event_keys": ["VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1003", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1004", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1005", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1006", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1007", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1008", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1009", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1010", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1011", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1012", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1013", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1014", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1015", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1016", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1017", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1018", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1019", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1020", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1021", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1022", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1023", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1024", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1025", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1026", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1027", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1028", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1029", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1030", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1031", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1032", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1033", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1034", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1035", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1036", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1037", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1038", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1039", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1040", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1041", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1042", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1043", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1044", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1045", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1046", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1047", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1048", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1049", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1050", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1051", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1052", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1053", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1054", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1055", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1056", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1057", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1058", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1059", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1060", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1061", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1062", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1063", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1064", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1065", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1066", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1067", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1068", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1069", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1070", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1071", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1072", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1073", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1074", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1075", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1076", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1077", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1078", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1079", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1080", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1081", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1082", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1083", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1084", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1085", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1086", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1087", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1088", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1089", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1090", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1091", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1092", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1093", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1094", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1095", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1096", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1097", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1098", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1099", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1100", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1101", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1102", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1103", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1104", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1105", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1106", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1107", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1108", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1109", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1110", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1111", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1112", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1113", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1114", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1115", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1116", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1117", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1118", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1119", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1120", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1121", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1122", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1123", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1124", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1125", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1126", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1127", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1128", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1129", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1130", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1131", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1132", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1133", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1134", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1135", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1136", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1137", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1138", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1139", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1140", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1141", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1142", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1143", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1144", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1145", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1146", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1147", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1148", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1149", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1150", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1151", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1152", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1153", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1154", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1155", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1156", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1157", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1158", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1159", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1160", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1161", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1162", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1163", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1164", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1165", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1166", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1167", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1168", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1169", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1170", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1171", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1172", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1173", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1174", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1175", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1176", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1177", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1178", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1179", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1180", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1181", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1182", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1183", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1184", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1185", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1186", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1187", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1188", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1189", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1190", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1191", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1192", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1193", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1194", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1195", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1196", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1197", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1198", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1199", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1200", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1201", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1202", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1203", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1204", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1205", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1206", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1207", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1208", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1209", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1210", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1211", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1212", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1213", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1214", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1215", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1216", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1217", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1218", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1219", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1220", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1221", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1222", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1223", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1224", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1225", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1226", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1227", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1228", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1229", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1230", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1231", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1232", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1233", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1234", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1235", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1236", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1237", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1238", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1239", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1240", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1241", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1242", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1243", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1244", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1245", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1246", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1247", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1248", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1249", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1250", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1251", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1252", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1253", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1254", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1255", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1256", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1257", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1258", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1259", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1260", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1261", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1262", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1263", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1264", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1265", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1266", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1267", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1268", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1269", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1270", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1271", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1272", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1273", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1274", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1275", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1276", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1277", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1278", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1279", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1280", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1281", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1282", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1283", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1284", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1285", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1286", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1287", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1288", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1289", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1290", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1291", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1292", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1293", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1294", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1295", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1296", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1297", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1298", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1299", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1300", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1301", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1302", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1303", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1304", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1305", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1306", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1307", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1308", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1309", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1310", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1311", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1312", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1313", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1314", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1315", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1316", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1317", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1318", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1319", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1320", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1321", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1322", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1323", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1324", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1325", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1326", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1327", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1328", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1329", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1330", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1331", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1332", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1333", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1334", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1335", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1336", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1337", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1338", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1339", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1340", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1341", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1342", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1343", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1344", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1345", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1346", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1347", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1348", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1349", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1350", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1351", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1352", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1353", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1354", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1355", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1356", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1357", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1358", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1359", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1360", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1361", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1362", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1363", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1364", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1365", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1366", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1367", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1368", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1369", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1370", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1371", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1372", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1373", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1374", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1375", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1376", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1377", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1378", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1379", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1380", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1381", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1382", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1383", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1384", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1385", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1386", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1387", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1388", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1389", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1390", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1391", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1392", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1393", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1394", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1395", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1396", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1397", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1398", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1399", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1400", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1401", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1402", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1403", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1404", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1405", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1406", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1407", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1408", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1409", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1410", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1411", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1412", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1413", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1414", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1415", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1416", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1417", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1418", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1419", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1420", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1421", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1422", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1423", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1424", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1425", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1426", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1427", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1428", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1429", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1430", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1431", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1432", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1433", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1434", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1435", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1436", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1437", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1438", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1439", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1440", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1441", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1442", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1443", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1444", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1445", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1446", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1447", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1448", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1449", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1450", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1451", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1452", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1453", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1454", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1455", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1456", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1457", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1458", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1459", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1460", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1461", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1462", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1463", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1464", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1465", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1466", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1467", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1468", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1469", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1470", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1471", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1472", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1473", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1474", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1475", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1476", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1477", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1478", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1479", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1480", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1481", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1482", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1483", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1484", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1485", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1486", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1487", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1488", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1489", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1490", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1491", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1492", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1493", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1494", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1495", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1496", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1497", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1498", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1499", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1500", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1501", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1502", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1503", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1504", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1505", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1506", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1507", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1508", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1509", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1510", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1511", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1512", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1513", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1514", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1515", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1516", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1517", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1518", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1519", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1520", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1521", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1522", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1523", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1524", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1525", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1526", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1527", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1528", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1529", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1530", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1531", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1532", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1533", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1534", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1535", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1536", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1537", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1538", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1539", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1540", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1541", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1542", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1543", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1544", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1545", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1546", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1547", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1548", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1549", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1550", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1551", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1552", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1553", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1554", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1555", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1556", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1557", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1558", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1559", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1560", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1561", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1562", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1563", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1564", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1565", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1566", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1567", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1568", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1569", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1570", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1571", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1572", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1573", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1574", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1575", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1576", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1577", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1578", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1579", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1580", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1581", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1582", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1583", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1584", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1585", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1586", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1587", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1588", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1589", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1590", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1591", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1592", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1593", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1594", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1595", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1596", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1597", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1598", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1599", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1600", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1601", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1602", "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1603"], "color": "#AB47BC", "width": 4}, "classes": "macro_edge"}]};
+    var poiId = "VICTIM-PC.corp.local:Microsoft-Windows-Sysmon/Operational:1001";
+
+    var cy = cytoscape({
+      container: document.getElementById('cy'),
+      elements: elements,
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'background-color': 'data(color)',
+            'label': 'data(label)',
+            'color': '#f0f6fc',
+            'font-size': '11px',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'text-wrap': 'wrap',
+            'width': 65,
+            'height': 65,
+            'border-width': 2,
+            'border-color': '#30363d',
+            'text-outline-color': '#0d1117',
+            'text-outline-width': 2
+          }
+        },
+        {
+          selector: '.poi',
+          style: {
+            'shape': 'diamond',
+            'width': 85,
+            'height': 85,
+            'border-width': 4,
+            'border-color': '#d81b60',
+            'font-weight': 'bold',
+            'font-size': '13px'
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width': 'data(width)',
+            'line-color': 'data(color)',
+            'target-arrow-color': 'data(color)',
+            'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier',
+            'label': 'data(label)',
+            'font-size': '10px',
+            'color': '#8b949e',
+            'text-rotation': 'autorotate',
+            'text-background-color': '#0d1117',
+            'text-background-opacity': 0.8,
+            'text-background-padding': 2
+          }
+        },
+        {
+          selector: '.macro_edge',
+          style: {
+            'line-style': 'dashed',
+            'line-dash-pattern': [6, 3],
+            'font-weight': 'bold',
+            'color': '#d2a8ff'
+          }
+        },
+        {
+          selector: ':selected',
+          style: {
+            'border-color': '#58a6ff',
+            'border-width': 4,
+            'line-color': '#58a6ff',
+            'target-arrow-color': '#58a6ff'
+          }
+        }
+      ],
+      layout: {
+        name: 'dagre',
+        rankDir: 'LR',
+        nodeSep: 60,
+        rankSep: 80,
+        animate: true,
+        animationDuration: 500
+      }
+    });
+
+    function runLayout(layoutName) {
+      cy.layout({
+        name: layoutName,
+        rankDir: 'LR',
+        animate: true,
+        animationDuration: 500
+      }).run();
+    }
+
+    function centerPoI() {
+      if (poiId) {
+        var node = cy.getElementById(poiId);
+        if (node.length > 0) {
+          cy.animate({
+            center: { eles: node },
+            zoom: 1.5,
+            duration: 600
+          });
+          node.select();
+          showNodeDetails(node.data());
+        }
+      }
+    }
+
+    function hidePanel() {
+      document.getElementById('details-panel').style.display = 'none';
+    }
+
+    function showNodeDetails(data) {
+      var panel = document.getElementById('details-panel');
+      var title = document.getElementById('panel-title');
+      var content = document.getElementById('panel-content');
+
+      title.innerText = (data.is_poi ? "⭐ [Point of Interest] " : "") + data.event_type;
+      var rows = [
+        ["Record ID", data.record_id],
+        ["UTC Timestamp", data.timestamp_utc],
+        ["Host", data.host_name],
+        ["Process GUID", data.process_guid || "N/A"],
+        ["Target / Object", data.target_object || "N/A"],
+        ["Hashes", data.hashes || "N/A"]
+      ];
+
+      var html = "";
+      rows.forEach(function(r) {
+        html += '<div class="prop-row">' +
+          '<div class="prop-label">' + r[0] + ':</div>' +
+          '<div class="prop-val">' + (r[1] || "-") + '</div></div>';
+      });
+      content.innerHTML = html;
+      panel.style.display = 'block';
+    }
+
+    function showEdgeDetails(data) {
+      var panel = document.getElementById('details-panel');
+      var title = document.getElementById('panel-title');
+      var content = document.getElementById('panel-content');
+
+      title.innerText = data.is_macro ? "🗂️ Contracted Macro-Edge" : "➡️ Causal Edge";
+      var rows = [
+        ["Relation", data.relation_type],
+        ["Is Macro?", data.is_macro ? "Yes (" + data.event_count + " events)" : "No"],
+        ["Macro ID", data.macro_edge_id || "None"],
+        ["Source Key", data.source],
+        ["Target Key", data.target]
+      ];
+
+      if (data.is_macro && data.ordered_event_keys) {
+        rows.push(["Collapsed Events", data.ordered_event_keys.length + " sequential records"]);
+      }
+
+      var html = "";
+      rows.forEach(function(r) {
+        html += '<div class="prop-row">' +
+          '<div class="prop-label">' + r[0] + ':</div>' +
+          '<div class="prop-val">' + (r[1] || "-") + '</div></div>';
+      });
+      content.innerHTML = html;
+      panel.style.display = 'block';
+    }
+
+    cy.on('tap', 'node', function(evt) {
+      showNodeDetails(evt.target.data());
+    });
+
+    cy.on('tap', 'edge', function(evt) {
+      showEdgeDetails(evt.target.data());
+    });
+
+    cy.on('tap', function(evt) {
+      if (evt.target === cy) {
+        hidePanel();
+      }
+    });
+
+    // Center on PoI on initial load
+    setTimeout(function() {
+      centerPoI();
+    }, 400);
+  </script>
+</body>
+</html>

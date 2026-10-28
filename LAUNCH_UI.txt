@@ -1,0 +1,27 @@
+========================================================================
+ProvGraph-DFIR: Provenance Explorer UI & Application Launch Commands
+========================================================================
+
+--- 1. Direct Execution via Virtual Environment (PowerShell) ---
+.\.venv\Scripts\streamlit.exe run src/provgraph/visualization/app.py
+
+--- 2. Direct Execution via Virtual Environment (Command Prompt cmd.exe) ---
+.\.venv\Scripts\streamlit.exe run src\provgraph\visualization\app.py
+
+--- 3. Using Activated Virtual Environment (PowerShell) ---
+.\.venv\Scripts\Activate.ps1
+streamlit run src/provgraph/visualization/app.py
+
+--- 4. ProvGraph Unified CLI Launcher ---
+.\.venv\Scripts\python.exe -m provgraph.cli ui
+# Or after pip install:
+# provgraph ui --port 8501
+
+--- 5. Specifying Custom Port, Host, or Headless Mode ---
+.\.venv\Scripts\streamlit.exe run src/provgraph/visualization/app.py --server.port 8501 --server.headless false
+
+========================================================================
+Default Application URL: http://localhost:8501
+Pre-loaded Attack Scenarios: Located in data/raw_mordor/
+SQLite Working Database: Automatically created per scenario in data/raw_mordor/
+========================================================================

@@ -1,0 +1,291 @@
+# ProvGraph-DFIR Benchmark Scenarios Catalog
+# Reference datasets, PoI filters, and Ground-Truth ATT&CK Techniques
+
+scenarios:
+  - id: "empire_vbs"
+    name: "Empire VBS Launcher"
+    file: "empire_launcher_vbs_2020-09-04160940.json"
+    technique: "T1059.005"
+    description: "Empire PowerShell agent delivered via malicious VBS stager script"
+    poi_selector:
+      event_id: 1
+      target_substring: "whoami"
+    ground_truth_steps:
+      - step_id: "S1"
+        technique_id: "T1059.005"
+        technique_name: "Visual Basic"
+        tactic: "Execution"
+        description: "VBS launcher script executed by wscript.exe"
+        expected_event_id: 1
+        expected_target_substring: "wscript.exe"
+      - step_id: "S2"
+        technique_id: "T1059.001"
+        technique_name: "PowerShell"
+        tactic: "Execution"
+        description: "PowerShell spawned with base64 encoded stager"
+        expected_event_id: 1
+        expected_target_substring: "powershell.exe"
+      - step_id: "S3"
+        technique_id: "T1082"
+        technique_name: "System Information Discovery"
+        tactic: "Discovery"
+        description: "Reconnaissance command whoami.exe executed"
+        expected_event_id: 1
+        expected_target_substring: "whoami.exe"
+
+  - id: "bitsadmin"
+    name: "BITSAdmin Download Cradle"
+    file: "cmd_bitsadmin_download_psh_script_2020-10-2302365189.json"
+    technique: "T1197"
+    description: "Living-off-the-land file download staged via Windows BITSAdmin utility"
+    poi_selector:
+      event_id: 1
+      target_substring: "bitsadmin"
+    ground_truth_steps:
+      - step_id: "S1"
+        technique_id: "T1197"
+        technique_name: "BITS Jobs"
+        tactic: "Defense Evasion"
+        description: "BITSAdmin executed to stage download job"
+        expected_event_id: 1
+        expected_target_substring: "bitsadmin.exe"
+      - step_id: "S2"
+        technique_id: "T1105"
+        technique_name: "Ingress Tool Transfer"
+        tactic: "Command and Control"
+        description: "Remote payload or staging buffer written to disk by BITS transfer"
+        expected_event_id: 11
+        expected_target_substring: "bit"
+
+  - id: "empire_mimikatz"
+    name: "Empire Mimikatz LSASS Dump"
+    file: "empire_mimikatz_logonpasswords_2020-08-07103224.json"
+    technique: "T1003.001"
+    description: "In-memory LSASS handle acquisition and credential dumping via Mimikatz"
+    poi_selector:
+      event_id: 10
+      target_substring: "lsass"
+    ground_truth_steps:
+      - step_id: "S1"
+        technique_id: "T1059.001"
+        technique_name: "PowerShell"
+        tactic: "Execution"
+        description: "Interactive PowerShell Empire stager session"
+        expected_target_substring: "powershell"
+      - step_id: "S2"
+        technique_id: "T1003.001"
+        technique_name: "LSASS Memory"
+        tactic: "Credential Access"
+        description: "ProcessAccess memory handle acquisition targeting lsass.exe"
+        expected_event_id: 10
+        expected_target_substring: "lsass"
+      - step_id: "S3"
+        technique_id: "T1033"
+        technique_name: "System Owner/User Discovery"
+        tactic: "Discovery"
+        description: "whoami execution spawned by stager"
+        expected_event_id: 1
+        expected_target_substring: "whoami.exe"
+
+  - id: "metasploit"
+    name: "Metasploit Lateral & Credential Dumping"
+    file: "metasploit_logonpasswords_lsass_memory_dump.json"
+    technique: "T1003.001 / T1059.003"
+    description: "Multi-stage Metasploit lateral execution, credential extraction, and log clearing"
+    poi_selector:
+      event_id: 1
+      target_substring: "wevtutil"
+    ground_truth_steps:
+      - step_id: "S1"
+        technique_id: "T1059.003"
+        technique_name: "Windows Command Shell"
+        tactic: "Execution"
+        description: "Initial command shell execution"
+        expected_target_substring: "cmd.exe"
+      - step_id: "S2"
+        technique_id: "T1003.001"
+        technique_name: "LSASS Memory"
+        tactic: "Credential Access"
+        description: "Payload scraping credentials from lsass.exe"
+        expected_event_id: 10
+        expected_target_substring: "lsass"
+      - step_id: "S3"
+        technique_id: "T1070.001"
+        technique_name: "Clear Windows Event Logs"
+        tactic: "Defense Evasion"
+        description: "Log clearing utility wevtutil.exe executed"
+        expected_event_id: 1
+        expected_target_substring: "wevtutil"
+
+  - id: "ransomware_burst"
+    name: "Scenario B: High-Volume Ransomware Burst"
+    file: "ransomware_burst.json"
+    technique: "T1486"
+    description: "Synthetic high-volume file encryption burst modeling WannaCrypt mass impact"
+    poi_selector:
+      event_id: 1
+      target_substring: "wannacrypt"
+    ground_truth_steps:
+      - step_id: "S1"
+        technique_id: "T1059.003"
+        technique_name: "Windows Command Shell"
+        tactic: "Execution"
+        description: "Ransomware launch wrapper cmd.exe"
+        expected_event_id: 1
+        expected_target_substring: "cmd.exe"
+      - step_id: "S2"
+        technique_id: "T1204.002"
+        technique_name: "Malicious File"
+        tactic: "Execution"
+        description: "WannaCrypt ransomware binary execution"
+        expected_event_id: 1
+        expected_target_substring: "wannacrypt.exe"
+      - step_id: "S3"
+        technique_id: "T1547.001"
+        technique_name: "Registry Run Keys"
+        tactic: "Persistence"
+        description: "Registry persistence / canary value modification"
+        expected_event_id: 12
+        expected_target_substring: "WannaCryptor"
+      - step_id: "S4"
+        technique_id: "T1486"
+        technique_name: "Data Encrypted for Impact"
+        tactic: "Impact"
+        description: "High-volume file mass encryption burst"
+        expected_event_id: 11
+        expected_target_substring: ".wnry"
+      - step_id: "S5"
+        technique_id: "T1491.001"
+        technique_name: "Internal Defacement"
+        tactic: "Impact"
+        description: "Ransom note dropped to victim desktop"
+        expected_event_id: 11
+        expected_target_substring: "Please_Read_Me"
+
+  - id: "apt_macro"
+    name: "Spearphishing Macro Dropper & Infiltration"
+    file: "apt_spearphishing_macro.json"
+    technique: "T1566.001"
+    description: "Office document macro drops VBS script, downloads DLL payload, injects into explorer.exe, and runs discovery"
+    poi_selector:
+      event_id: 1
+      target_substring: "whoami"
+    ground_truth_steps:
+      - step_id: "S1"
+        technique_id: "T1566.001"
+        technique_name: "Spearphishing Attachment"
+        tactic: "Initial Access"
+        description: "Malicious Word document opened by user"
+        expected_event_id: 1
+        expected_target_substring: "WINWORD.EXE"
+      - step_id: "S2"
+        technique_id: "T1059.005"
+        technique_name: "Visual Basic"
+        tactic: "Execution"
+        description: "VBS stager dropped and launched via wscript.exe"
+        expected_event_id: 1
+        expected_target_substring: "wscript.exe"
+      - step_id: "S3"
+        technique_id: "T1105"
+        technique_name: "Ingress Tool Transfer"
+        tactic: "Command and Control"
+        description: "Remote DLL downloaded from external C2"
+        expected_event_id: 3
+        expected_target_substring: "198.51.100.23"
+      - step_id: "S4"
+        technique_id: "T1055.001"
+        technique_name: "Dynamic-link Library Injection"
+        tactic: "Defense Evasion"
+        description: "CreateRemoteThread thread injection into explorer.exe"
+        expected_event_id: 8
+        expected_target_substring: "explorer.exe"
+      - step_id: "S5"
+        technique_id: "T1082"
+        technique_name: "System Information Discovery"
+        tactic: "Discovery"
+        description: "Reconnaissance discovery executed"
+        expected_event_id: 1
+        expected_target_substring: "whoami.exe"
+
+  - id: "psexec_lateral"
+    name: "PsExec Remote Service Lateral Movement"
+    file: "lateral_movement_psexec.json"
+    technique: "T1021.002"
+    description: "Remote administrative share execution via PSEXESVC service creation, Active Directory domain discovery, and data staging"
+    poi_selector:
+      event_id: 1
+      target_substring: "nltest"
+    ground_truth_steps:
+      - step_id: "S1"
+        technique_id: "T1543.003"
+        technique_name: "Windows Service"
+        tactic: "Persistence"
+        description: "PSEXESVC binary dropped and registered by services.exe"
+        expected_event_id: 1
+        expected_target_substring: "PSEXESVC.exe"
+      - step_id: "S2"
+        technique_id: "T1059.001"
+        technique_name: "PowerShell"
+        tactic: "Execution"
+        description: "PowerShell reconnaissance script executed via service"
+        expected_event_id: 1
+        expected_target_substring: "powershell.exe"
+      - step_id: "S3"
+        technique_id: "T1482"
+        technique_name: "Domain Trust Discovery"
+        tactic: "Discovery"
+        description: "nltest domain discovery executed"
+        expected_event_id: 1
+        expected_target_substring: "nltest.exe"
+      - step_id: "S4"
+        technique_id: "T1074.001"
+        technique_name: "Local Data Staging"
+        tactic: "Collection"
+        description: "Loot archive created in temporary folder"
+        expected_event_id: 11
+        expected_target_substring: "loot_archive.zip"
+      - step_id: "S5"
+        technique_id: "T1041"
+        technique_name: "Exfiltration Over C2 Channel"
+        tactic: "Exfiltration"
+        description: "Outbound socket connection to exfiltration listener"
+        expected_event_id: 3
+        expected_target_substring: "203.0.113.88"
+
+  - id: "defense_evasion"
+    name: "Shadow Copy Deletion & Defense Impairment"
+    file: "defense_evasion_tampering.json"
+    technique: "T1490"
+    description: "Multi-stage system recovery impairment via vssadmin shadow copy deletion, wbadmin catalog wipe, and Defender real-time monitoring disablement"
+    poi_selector:
+      event_id: 1
+      target_substring: "vssadmin"
+    ground_truth_steps:
+      - step_id: "S1"
+        technique_id: "T1490"
+        technique_name: "Inhibit System Recovery"
+        tactic: "Impact"
+        description: "Volume shadow copies purged via vssadmin"
+        expected_event_id: 1
+        expected_target_substring: "vssadmin.exe"
+      - step_id: "S2"
+        technique_id: "T1490"
+        technique_name: "Inhibit System Recovery"
+        tactic: "Impact"
+        description: "Windows backup catalog deleted via wbadmin"
+        expected_event_id: 1
+        expected_target_substring: "wbadmin.exe"
+      - step_id: "S3"
+        technique_id: "T1562.001"
+        technique_name: "Disable or Modify Tools"
+        tactic: "Defense Evasion"
+        description: "Windows Defender real-time protection disabled via PowerShell"
+        expected_event_id: 1
+        expected_target_substring: "powershell.exe"
+      - step_id: "S4"
+        technique_id: "T1112"
+        technique_name: "Modify Registry"
+        tactic: "Defense Evasion"
+        description: "DisableAntiSpyware policy set in Windows registry"
+        expected_event_id: 13
+        expected_target_substring: "DisableAntiSpyware"

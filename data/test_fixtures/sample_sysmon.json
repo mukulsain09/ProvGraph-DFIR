@@ -1,0 +1,84 @@
+[
+  {
+    "Computer": "VICTIM-PC.CORP.LOCAL",
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "RecordNumber": 1001,
+    "EventID": 1,
+    "UtcTime": "2026-10-25 04:00:00.100",
+    "EventData": {
+      "ProcessGuid": "{11111111-0000-0000-0000-000000000001}",
+      "ProcessId": 1024,
+      "Image": "C:\\Windows\\System32\\cmd.exe",
+      "CommandLine": "cmd.exe",
+      "User": "CORP\\Administrator"
+    }
+  },
+  {
+    "Computer": "VICTIM-PC.CORP.LOCAL",
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "RecordNumber": 1002,
+    "EventID": 1,
+    "UtcTime": "2026-10-25 04:00:01.200",
+    "EventData": {
+      "ProcessGuid": "{22222222-0000-0000-0000-000000000002}",
+      "ParentProcessGuid": "{11111111-0000-0000-0000-000000000001}",
+      "ProcessId": 2048,
+      "ParentProcessId": 1024,
+      "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "CommandLine": "powershell.exe -enc SQBFAFgA...",
+      "User": "CORP\\Administrator"
+    }
+  },
+  {
+    "Computer": "VICTIM-PC.CORP.LOCAL",
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "RecordNumber": 1003,
+    "EventID": 11,
+    "UtcTime": "2026-10-25 04:00:02.300",
+    "EventData": {
+      "ProcessGuid": "{22222222-0000-0000-0000-000000000002}",
+      "ProcessId": 2048,
+      "TargetFilename": "C:\\Users\\Public\\stage.exe",
+      "Hashes": "SHA256=A1B2C3D4E5F67890"
+    }
+  },
+  {
+    "Computer": "VICTIM-PC.CORP.LOCAL",
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "RecordNumber": 1004,
+    "EventID": 1,
+    "UtcTime": "2026-10-25 04:00:03.400",
+    "EventData": {
+      "ProcessGuid": "{33333333-0000-0000-0000-000000000003}",
+      "ParentProcessGuid": "{22222222-0000-0000-0000-000000000002}",
+      "ProcessId": 4096,
+      "Image": "C:\\Users\\Public\\stage.exe",
+      "CommandLine": "stage.exe",
+      "User": "CORP\\Administrator"
+    }
+  },
+  {
+    "Computer": "VICTIM-PC.CORP.LOCAL",
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "RecordNumber": 1005,
+    "EventID": 3,
+    "UtcTime": "2026-10-25 04:00:04.500",
+    "EventData": {
+      "ProcessGuid": "{33333333-0000-0000-0000-000000000003}",
+      "ProcessId": 4096,
+      "DestinationIp": "198.51.100.23",
+      "DestinationPort": "443"
+    }
+  },
+  {
+    "Computer": "VICTIM-PC.CORP.LOCAL",
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "RecordNumber": 1006,
+    "EventID": 5,
+    "UtcTime": "2026-10-25 04:00:05.600",
+    "EventData": {
+      "ProcessGuid": "{22222222-0000-0000-0000-000000000002}",
+      "ProcessId": 2048
+    }
+  }
+]

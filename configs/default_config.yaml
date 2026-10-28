@@ -1,0 +1,15 @@
+# ProvGraph-DFIR Default Pipeline Configuration
+# Research Protocol & Thesis Baseline Parameters
+
+slicing:
+  max_depth: 15
+  max_delta_sec: 3600.0
+  direction: "both"  # "both", "backward", or "forward"
+
+contraction:
+  entropy_threshold: 1.0
+  enable_fanout_contraction: true
+  min_fanout_size: 3
+
+storage:
+  default_db_path: "data/ledger.db"
